@@ -11,6 +11,21 @@ import mongoose from "mongoose";
 //         message: "Hello Anurag"
 //     })
 // })
+const generateAccessTokenRefreshToken = async (UserId) => {
+    try {
+        const user = User.findById(UserId)
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave: false})
+
+
+        return {accessToken, refreshToken}
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while generating Refresh Token");
+    }
+}
 const registerUser = asyncHandler( async (req, res) => {
     // get user details from frontend
     // validation - not empty
@@ -91,4 +106,68 @@ const registerUser = asyncHandler( async (req, res) => {
 
 } )
 
-export {registerUser}
+const loginUser = asyncHandler(async(req, res) => {
+    //todos
+    //req.body se data
+    //username or email, password by req.body
+
+    //find the user
+    //check the password
+    //access and refreshtoken
+    //send cookies
+
+    const {username, email, password} = req.body
+
+    if(!username || !email) {
+        throw new ApiError(400, "username or email is required")
+    }
+
+    const user = await User.findOne({
+        $or: [{username}, {email}]  
+    })
+
+    if(!user) {
+        throw new ApiError(404, "user not found")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if(!isPasswordValid) {
+        throw new ApiError(401, "password incorrect")
+    }
+
+    const {accessToken, refreshToken} = await generateAccessTokenRefreshToken(user._id)
+
+    const loggedInUser = await User.findById(user._id).
+    select("-password -refreshToken")
+
+    const option = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+    .status(200)
+    .cokkie("accessToken", accessToken, option)
+    .cokkie("refreshToken", refreshToken, option)
+    .json(
+        new ApiResponse(
+            200, 
+            {
+                user:loggedInUser, accessToken, refreshToken
+            }, 
+            "User loggedIn successfully"
+        )
+    )
+})
+
+const loggedOutUser = asyncHandler(async(req, res) => {
+    //cokkie clear karo
+    User.findById()
+})
+
+export {
+    registerUser,
+    loginUser,
+    loggedOutUser
+}
