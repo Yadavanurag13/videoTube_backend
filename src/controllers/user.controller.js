@@ -161,10 +161,10 @@ const loginUser = asyncHandler(async(req, res) => {
     )
 })
 
-const loggedOutUser = asyncHandler(async(req, res) => {
-    //cokkie clear karo
-    User.findById()
-})
+// const loggedOutUser = asyncHandler(async(req, res) => {
+//     //cokkie clear karo
+//     User.findById()
+// })
 
 export {
     registerUser,
