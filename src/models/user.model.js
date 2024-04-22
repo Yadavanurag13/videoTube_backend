@@ -54,21 +54,40 @@ const userSchema = new Schema(
     //hook
 
     //don't use arrow function
-    userSchema.pre("save", async function(next) {
-        //whenever someone changes tha usermode data and save it, each time password gets change
+
+    //.pre is middleware which will execute before saving 
+    // userSchema.pre("save", async function(next) {
+    //     //whenever someone changes tha usermode data and save it, each time password gets change
+    //     if(!this.isModified("password")) return next();
+
+    //     this.password = bcrypt.hash(this.password, 10)
+    //     next()
+    // })
+
+    // //  .methods is property in mongoose to add any method to Schema
+    // userSchema.methods.isPasswordCorrect = async function(password) {
+    //     return await bcrypt.compare(password, this.password)
+    // }  
+    
+    userSchema.pre("save", async function (next) {
         if(!this.isModified("password")) return next();
-
-        this.password = bcrypt.hash(this.password, 10)
-        next()
+    
+        try {
+            this.password = await bcrypt.hash(this.password, 10)
+            next()
+        } catch (error) {
+            next(error)
+        }
     })
-
-    userSchema.methods.isPasswordCorrect = async function(password) {
+    
+    userSchema.methods.isPasswordCorrect = async function(password){
         return await bcrypt.compare(password, this.password)
-    }   
+    }
+    
 
 
-    userSchema.methods.generateAccessToken = function() {
-        jwt.sign(
+    userSchema.methods.generateAccessToken = async function() {
+        const token = await jwt.sign(
             {
                 _id: this._id,
                 email: this.email,
@@ -80,10 +99,12 @@ const userSchema = new Schema(
                 expiresIn: process.env.ACCESS_TOKEN_EXPIRY
             }
         )
+        console.log(token);
+        return token;
     }
 
     userSchema.methods.generateRefreshToken = function() {
-        jwt.sign(
+        return jwt.sign(
             {
                 _id: this._id,
                 email: this.email,
