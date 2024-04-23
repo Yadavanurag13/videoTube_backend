@@ -218,8 +218,56 @@ const logoutUser = asyncHandler(async(req, res) => {
     .json(new ApiResponse(200, {}, "User logged Out"))
 })
 
+const refreshAccessToken = asyncHandler(async(req, res) => {
+    //for someone using mobile we have to take it from body since cookies can not be sent by 
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+
+    if(!incomingRefreshToken) {
+        throw new ApiError(401, "Unauthorized Request")
+    }
+
+    //now verifyt the refershtoken
+
+    try {
+        const decodedToken = jwt.verify(
+            refreshAccessToken,
+            process.env.REFRESH_TOKEN_SECRET,
+        )
+    
+        const user = await User.findById(decodedToken?._id)
+    
+        if(!user) {
+            throw new ApiError(401, "Invalid Refresh Token")
+        }
+    
+        if(incomingRefreshToken !== user?.refreshToken) {
+            throw new ApiError(401, "Refresh Token is expired or used")
+        }
+    
+        const options = {
+            httpOnly: true,
+            secure : true
+        }
+    
+        //when we have to generate new token we can user generateAccessAndRefershToken method that we have made in userController
+    
+        const {accessToken, newRefreshToken} = await generateAccessTokenRefreshToken(user._id)
+    
+        return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", newRefreshToken, options)
+        .json(
+            new ApiResponse(200, {accessToken, refreshToken :newRefreshToken, }, )
+        )
+    } catch (error) {
+        throw new ApiError(400, error?.message || "Invalid refreshToken")
+    }
+})
+
 export {
     registerUser,
     loginUser,
-    logoutUser
+    logoutUser,
+    refreshAccessToken
 }
