@@ -26,6 +26,7 @@ const generateAccessTokenRefreshToken = async (UserId) => {
         //console.log(refreshToken)
 
         user.refreshToken = refreshToken
+        //user.accessToken = accessToken
         //database will demand for validation so we make to false not it will not demand for 
         await user.save({validateBeforeSave: false})
 
@@ -156,8 +157,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
         const loggedInUser = await User
         .findById(user._id)
-        .select("-password -refreshToken")
-        .lean(); 
+        .select("-password -refreshToken") 
 
         //console.log(loggedInUser)
        
@@ -168,8 +168,8 @@ const loginUser = asyncHandler(async (req, res) => {
             //this will enhance the security of cookies 
             //it can be change form server side note the user
         }
-    
-        return res
+        
+        const respo = res
         .status(200)
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
@@ -182,11 +182,14 @@ const loginUser = asyncHandler(async (req, res) => {
                 "User loggedIn Successfully"
             )
         )
+        console.log(respo)
+        return respo
     } catch (error) {
         console.log(error);
         throw new ApiError(401, "Invalid user credentials")
         
     }
+
 })
 //cokkies clear krna hoga
 //access and refreshtoken has be
