@@ -222,15 +222,17 @@ const refreshAccessToken = asyncHandler(async(req, res) => {
     //for someone using mobile we have to take it from body since cookies can not be sent by 
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
+    //console.log(incomingRefreshToken)
     if(!incomingRefreshToken) {
         throw new ApiError(401, "Unauthorized Request")
     }
 
+    //console.log("anuragr")
     //now verifyt the refershtoken
 
     try {
         const decodedToken = jwt.verify(
-            refreshAccessToken,
+            incomingRefreshToken,
             process.env.REFRESH_TOKEN_SECRET,
         )
     
@@ -258,7 +260,14 @@ const refreshAccessToken = asyncHandler(async(req, res) => {
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", newRefreshToken, options)
         .json(
-            new ApiResponse(200, {accessToken, refreshToken :newRefreshToken, }, )
+            new ApiResponse(
+                200,
+                {
+                    accessToken,
+                    refreshToken: newRefreshToken,
+                },
+                "AccessToken refreshed"
+            )
         )
     } catch (error) {
         throw new ApiError(400, error?.message || "Invalid refreshToken")
