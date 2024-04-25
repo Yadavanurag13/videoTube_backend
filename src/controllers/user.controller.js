@@ -282,7 +282,7 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
     }
 
     //for changing current password user is already login so from req we can take id of user
-    
+
     const user = User.findById(req?._id)
 
     const isPasswordValid = await user.isPasswordCorrect(oldPassword)
