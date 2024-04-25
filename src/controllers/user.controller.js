@@ -116,15 +116,14 @@ const registerUser = asyncHandler( async (req, res) => {
 
 } )
 
-
-//todo 
-
-//username or email
-//find the user
-//password check karo
-//access and refreshtoken generate karke 
-//send cookie ans response
 const loginUser = asyncHandler(async (req, res) => {
+    //todo 
+
+    //username or email
+    //find the user
+    //password check karo
+    //access and refreshtoken generate karke 
+    //send cookie ans response
     try {
         const {username, email, password} = req.body
     
@@ -191,9 +190,10 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 
 })
-//cokkies clear krna hoga
-//access and refreshtoken has be
+
 const logoutUser = asyncHandler(async(req, res) => {
+    //cokkies clear krna hoga
+    //access and refreshtoken has be
     await User.findByIdAndUpdate(
         req.user._id,
         {
@@ -283,7 +283,7 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
 
     //for changing current password user is already login so from req we can take id of user
 
-    const user = User.findById(req?._id)
+    const user = User.findById(req.user?._id)
 
     const isPasswordValid = await user.isPasswordCorrect(oldPassword)
 
@@ -311,11 +311,37 @@ const getCurrentUser = asyncHandler(async(req, res) => {
     )
 })
 
+const updateAccountDetail = asyncHandler(async(req, res) => {
+    const {fullName, email, } = req.body();
+
+    if(!fullName && !email) {
+        throw new ApiError(401, "All field requried")
+    }
+
+    const user = User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                fullName: fullName,
+                email: email,
+            }
+        },
+        {new: true} //when we mark true it will return the upadated value
+    ).select("-password")
+
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Account Details updated successfully"))
+})
+
+const upadateUser 
 export {
     registerUser,
     loginUser,
     logoutUser,
     refreshAccessToken, 
     changeCurrentPassword,
-    getCurrentUser
+    getCurrentUser,
+    updateAccountDetail
 }
