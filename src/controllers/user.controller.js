@@ -278,7 +278,7 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
     const {oldPassword, newPassword, confPassword} = req.body
 
     if(newPassword !== confPassword) {
-        throw new ApiError()
+        throw new ApiError(422, "Password Mismatch")
     }
 
     //for changing current password user is already login so from req we can take id of user
