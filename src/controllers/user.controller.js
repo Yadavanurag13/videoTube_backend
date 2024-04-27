@@ -305,9 +305,7 @@ const getCurrentUser = asyncHandler(async(req, res) => {
     return res
     .status(200)
     .json(
-        200,
-        req.user,
-        "Current User fectched successfully"
+        new ApiResponse(200, {}, "current user fetched successfully")
     )
 })
 
@@ -337,6 +335,8 @@ const updateAccountDetail = asyncHandler(async(req, res) => {
 })
 
 const updateUserAvatar = asyncHandler(async(req, res) => {
+    const oldAvatar = req.user?.avatar
+
     // console.log(req.file)
     const avatarLocalPath = req.file?.path
 
@@ -349,6 +349,9 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
     if(!avatar.url) {
         throw new ApiError(400, "Error while uploading avatar")
     }
+    //delete older image
+
+    avtarToBeDeletd(oldAvatar)
 
     const user = User.findByIdAndUpdate(
         req.user?._id,
@@ -366,9 +369,9 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
     .status()
     .json(
         new ApiResponse(
-            200,
-            {},
-            "CoverImage updated successfully"
+        200, 
+        {},
+        "user avatar update successfully"
         )
     )
 })
@@ -409,6 +412,52 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
     )
 })
 
+//todo - delete the user from the database 
+//if someone want to delete their data
+
+const getUserChannelProfile = asyncHandler(async(req, res) => {
+    const {username} = req.params
+
+    if(!username?.trim()) {
+        throw new ApiError(400, "username is missing")
+    }
+
+    //return type is array
+    const channel = User.aggregate([
+        {
+            $match: {
+                username: username?.toLowerCase()
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subcriber",
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribedTo"
+            }
+        }, 
+        {
+            $addFields: {
+                subscriberCount: {
+                    $size: "subcriber"
+                },
+                channelSubscribedTo: {
+                    $size: "subscribedTo"
+                }
+            }
+        }
+    ])
+})
+
 export {
     registerUser,
     loginUser,
@@ -417,5 +466,7 @@ export {
     changeCurrentPassword,
     getCurrentUser,
     updateAccountDetail,
-    updateUserAvatar
+    updateUserAvatar,
+    updateUserCoverImage,
+    getUserChannelProfile
 }
