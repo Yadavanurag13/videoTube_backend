@@ -181,7 +181,7 @@ const loginUser = asyncHandler(async (req, res) => {
                 "User loggedIn Successfully"
             )
         )
-        console.log(respo)
+        //console.log(respo)
         return respo
     } catch (error) {
         console.log(error);
@@ -276,15 +276,17 @@ const refreshAccessToken = asyncHandler(async(req, res) => {
 
 const changeCurrentPassword = asyncHandler(async(req, res) => {
     const {oldPassword, newPassword, confPassword} = req.body
-
+    
+    console.log(oldPassword)
     if(newPassword !== confPassword) {
         throw new ApiError(422, "Password Mismatch")
     }
 
     //for changing current password user is already login so from req we can take id of user
 
-    const user = User.findById(req.user?._id)
+    const user = await User.findById(req.user?._id)
 
+  
     const isPasswordValid = await user.isPasswordCorrect(oldPassword)
 
     if(!isPasswordValid) {
@@ -298,14 +300,20 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
     return res
     .status(200)
     .json(new ApiResponse(200, {}, "Password changed successfully"))
+    
 })
 
 const getCurrentUser = asyncHandler(async(req, res) => {
 
+    const user = req?.user
+
+    if(!user) {
+        throw new ApiError(400, "user does not exist or logged INr")
+    }
     return res
     .status(200)
     .json(
-        new ApiResponse(200, {}, "current user fetched successfully")
+        new ApiResponse(200, user, "current user fetched successfully")
     )
 })
 
@@ -452,10 +460,39 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
                 },
                 channelSubscribedTo: {
                     $size: "subscribedTo"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                        then: true,
+                        else: false,
+                    }
                 }
+            }
+        },
+        {
+            $project: {
+                fullName: 1,
+                username: 1,
+                subscriberCount: 1,
+                channelSubscribedTo: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                coverImage: 1,
+                email: 1,
             }
         }
     ])
+
+    if(!channel?.length) {
+        throw new ApiError(404, "Channel does not exist")
+    }
+
+    return res
+    .status(200)
+    .json(
+    new ApiResponse(200, {}, "User channel fetched successfully ")
+    )
 })
 
 export {
